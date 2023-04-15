@@ -1,57 +1,60 @@
 #include <iostream>
 #include <string>
+#include <cstring>
 using namespace std;
 
-bool evaluateBoolean(string str, int& index, bool& result);
-
-bool evaluateSubExpression(string str, int& index, bool& result) {
-    if (str[index] == '~') {
-        index++;
-        // Evaluate the negation of the next expression
-        bool negationResult;
-        evaluateBoolean(str, index, negationResult);
-        result = !negationResult;
-        return true;
-    } else if ((str[index] >= 'a' && str[index] <= 'z') || (str[index] >= 'A' && str[index] <= 'Z')) {
-        // Evaluate the literal
-        result = str[index] >= 'A' && str[index] <= 'Z';
-        index++;
-        return true;
-    } else {
-        // Return false to indicate that an error occurred
-        return false;
-    }
-}
-
-bool evaluateBoolean(string str, int& index, bool& result) {
-    if (!evaluateSubExpression(str, index, result)) {
-        return false;
-    }
-
-    while (index < str.length()) {
-        if (str[index] == '^') {
-            index++;
-            bool rightResult;
-            if (!evaluateSubExpression(str, index, rightResult)) {
-                return false;
-            }
-            result = result || rightResult;
-        } else if (str[index] == 'v') {
-            index++;
-            bool rightResult;
-            if (!evaluateSubExpression(str, index, rightResult)) {
-                return false;
-            }
-            result = result && rightResult;
-        } else if (str[index] == ')') {
-            index++;
-            return true;
+// Functions
+string applyDeMorgan(string str, int start, int end) {
+    string result;
+    for (int i = start; i <= end; i++) {
+        if (str[i] == '^') {
+            // result.push_back('v');
+            result = result + 'v';
+        } else if (str[i] == 'v') {
+            // result.push_back('^');
+            result = result + '^';
+        } else if ((str[i] >= 'a' && str[i] <= 'z') || (str[i] >= 'A' && str[i] <= 'Z')) {
+            // result.push_back('~');
+            // result.push_back(str[i]);
+            result = result + '~' + str[i];
         } else {
-            return false;
+            // result.push_back(str[i]);
+            result = result + str[i];
         }
     }
+    return result;
+}
 
-    return true;
+string SimplifyBoolean(string str) {
+    int arrLength = str.length();
+    string updatedStr;
+
+    for (int i = 0; i < arrLength; i++) {
+        if (str[i] == '~' && str[i + 1] == '(') {
+            int openParentheses = 1;
+            int closeParentheses = 0;
+
+            for (int j = i + 2; j < arrLength; j++) {
+                if (str[j] == '(') {
+                    openParentheses++;
+                } else if (str[j] == ')') {
+                    closeParentheses++;
+                }
+
+                if (openParentheses == closeParentheses) {
+                    string simplified = applyDeMorgan(str, i + 2, j - 1);
+                    // updatedStr += simplified;
+                    updatedStr = updatedStr + simplified;
+                    i = j;
+                    break;
+                }
+            }
+        } else {
+            // updatedStr.push_back(str[i]);
+            updatedStr = updatedStr + str[i];
+        }
+    }
+    return updatedStr;
 }
 
 int main() {
@@ -59,17 +62,7 @@ int main() {
     cout << "Enter a propositional Formula" << endl;
     getline(cin, propositionalFormula);
 
-    int index = 0;
-    bool result;
-    bool success = evaluateBoolean(propositionalFormula, index, result);
-
-    if (success) {
-        // Print the final result of the expression
-        cout << "Result: " << (result ? "true" : "false") << endl;
-    } else {
-        // Indicate that an error occurred
-        cout << "Error: Invalid propositional formula" << endl;
-    }
+    cout << "Simplified formula: " << SimplifyBoolean(propositionalFormula) << endl;
 
     return 0;
 }
